@@ -10,21 +10,27 @@
 #include "rotation.h"
 #include "random.h"
 
+// TODO Check eigen library
+
+//! What are these functions?
 typedef Eigen::Map<Eigen::VectorXd> VectorRef;
 typedef Eigen::Map<const Eigen::VectorXd> ConstVectorRef;
 
+// scanning data file
 template<typename T>
-void FscanfOrDie(FILE *fptr, const char *format, T *value) {
+void FscanfOrDie(FILE *fptr, const char *format, T *value) { // cannot change the value at format
     int num_scanned = fscanf(fptr, format, value);
     if (num_scanned != 1)
         std::cerr << "Invalid UW data file. ";
 }
 
+// Adding noise to data (purturbing)
 void PerturbPoint3(const double sigma, double *point) {
     for (int i = 0; i < 3; ++i)
         point[i] += RandNormal() * sigma;
 }
 
+// use in normalizing the dataset
 double Median(std::vector<double> *data) {
     int n = data->size();
     std::vector<double>::iterator mid_point = data->begin() + n / 2;
@@ -93,49 +99,6 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions) {
         delete[]parameters_;
         parameters_ = quaternion_parameters;
     }
-}
-
-void BALProblem::WriteToFile(const std::string &filename) const {
-    FILE *fptr = fopen(filename.c_str(), "w");
-
-    if (fptr == NULL) {
-        std::cerr << "Error: unable to open file " << filename;
-        return;
-    }
-
-    fprintf(fptr, "%d %d %d %d\n", num_cameras_, num_cameras_, num_points_, num_observations_);
-
-    for (int i = 0; i < num_observations_; ++i) {
-        fprintf(fptr, "%d %d", camera_index_[i], point_index_[i]);
-        for (int j = 0; j < 2; ++j) {
-            fprintf(fptr, " %g", observations_[2 * i + j]);
-        }
-        fprintf(fptr, "\n");
-    }
-
-    for (int i = 0; i < num_cameras(); ++i) {
-        double angleaxis[9];
-        if (use_quaternions_) {
-            //OutPut in angle-axis format.
-            QuaternionToAngleAxis(parameters_ + 10 * i, angleaxis);
-            memcpy(angleaxis + 3, parameters_ + 10 * i + 4, 6 * sizeof(double));
-        } else {
-            memcpy(angleaxis, parameters_ + 9 * i, 9 * sizeof(double));
-        }
-        for (int j = 0; j < 9; ++j) {
-            fprintf(fptr, "%.16g\n", angleaxis[j]);
-        }
-    }
-
-    const double *points = parameters_ + camera_block_size() * num_cameras_;
-    for (int i = 0; i < num_points(); ++i) {
-        const double *point = points + i * point_block_size();
-        for (int j = 0; j < point_block_size(); ++j) {
-            fprintf(fptr, "%.16g\n", point[j]);
-        }
-    }
-
-    fclose(fptr);
 }
 
 // Write the problem to a PLY file for inspection in Meshlab or CloudCompare

@@ -1,4 +1,6 @@
 #include <iostream>
+#define CERES_USE_CXX11_THREADS = 1
+
 #include <ceres/ceres.h>
 #include "common.h"
 #include "SnavelyReprojectionError.h"
@@ -15,17 +17,25 @@ int main(int argc, char **argv) {
 
     BALProblem bal_problem(argv[1]);
     bal_problem.Normalize();
-    bal_problem.Perturb(0.1, 0.5, 0.5);
+    cout << "normalized" << endl;
+    // purturbing the data. Args- rotation, translation, point
+    bal_problem.Perturb(0.1, 0.5, 0.5); 
+    cout << "purturbed" << endl;
+    // before solving BA
     bal_problem.WriteToPLYFile("initial.ply");
+    cout << "initial.py" << endl;
+    // solve BS
     SolveBA(bal_problem);
+    cout << "solved BA" << endl;
+    // after solving BA
     bal_problem.WriteToPLYFile("final.ply");
-
+    cout << "written final.py" << endl;
     return 0;
 }
 
 void SolveBA(BALProblem &bal_problem) {
-    const int point_block_size = bal_problem.point_block_size();
-    const int camera_block_size = bal_problem.camera_block_size();
+    const int point_block_size = bal_problem.point_block_size(); // 3
+    const int camera_block_size = bal_problem.camera_block_size(); // 10 or 9 based on if quaternions used
     double *points = bal_problem.mutable_points();
     double *cameras = bal_problem.mutable_cameras();
 
@@ -43,7 +53,8 @@ void SolveBA(BALProblem &bal_problem) {
         cost_function = SnavelyReprojectionError::Create(observations[2 * i + 0], observations[2 * i + 1]);
 
         // If enabled use Huber's loss function.
-        ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0);
+        //! check why huber loss
+        ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0); // huber loss so that wrong points do not overpower many correct classifications
 
         // Each observation corresponds to a pair of a camera and a point
         // which are identified by camera_index()[i] and point_index()[i]
@@ -54,16 +65,16 @@ void SolveBA(BALProblem &bal_problem) {
         problem.AddResidualBlock(cost_function, loss_function, camera, point);
     }
 
-    // show some information here ...
+    // show some information here
     std::cout << "bal problem file loaded..." << std::endl;
     std::cout << "bal problem have " << bal_problem.num_cameras() << " cameras and "
               << bal_problem.num_points() << " points. " << std::endl;
     std::cout << "Forming " << bal_problem.num_observations() << " observations. " << std::endl;
 
     std::cout << "Solving ceres BA ... " << endl;
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
-    options.minimizer_progress_to_stdout = true;
+    ceres::Solver::Options options; //! what all options are available. pros cons of each
+    options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR; //! why sparse schur
+    options.minimizer_progress_to_stdout = true; //! what is this
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";

@@ -1,6 +1,8 @@
 #ifndef SnavelyReprojection_H
 #define SnavelyReprojection_H
 
+#define CERES_USE_CXX11_THREADS = 1
+
 #include <iostream>
 #include "ceres/ceres.h"
 #include "rotation.h"
@@ -57,8 +59,11 @@ public:
         return true;
     }
 
+    // Factory to hide the construction of the CostFunction object from
+    // the client code.
     static ceres::CostFunction *Create(const double observed_x, const double observed_y) {
-        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
+        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>( //! wtf is this
+        // return (new ceres::DynamicAutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>( //! wtf is this
             new SnavelyReprojectionError(observed_x, observed_y)));
     }
 
