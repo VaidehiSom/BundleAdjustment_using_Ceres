@@ -73,4 +73,8 @@ Total                                6.397725
 Termination:                   NO_CONVERGENCE (Maximum number of iterations reached. Number of iterations: 50.)
 ```
 
-### Visualizing the point clouds from initial.ply and final.ply file-
+### Visualizing the point clouds from initial.ply and final.ply file
+#### Initial PCL
+![Input PCL](results/initial.png)
+#### Final PCL. We can see the difference in the structure which is much clearer and sharper now
+![Output PCL](results/final.png)
