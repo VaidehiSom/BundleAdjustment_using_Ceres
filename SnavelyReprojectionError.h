@@ -27,30 +27,33 @@ public:
 
     // camera : 9 dims array
     // [0-2] : angle-axis rotation
-    // [3-5] : translateion
-    // [6-8] : camera parameter, [6] focal length, [7-8] second and forth order radial distortion
+    // [3-5] : translation
+    // [6-8] : camera parameter, [6] focal length, [7-8] second and forth order radial distortion: u(1 + k1*r^2 + k2^r^4)
     // point : 3D location.
     // predictions : 2D predictions with center of the image plane.
     template<typename T>
     static inline bool CamProjectionWithDistortion(const T *camera, const T *point, T *predictions) {
         // Rodrigues' formula
         T p[3];
+        // rotating point along cameras axis
         AngleAxisRotatePoint(camera, point, p);
         // camera[3,4,5] are the translation
         p[0] += camera[3];
         p[1] += camera[4];
         p[2] += camera[5];
 
-        // Compute the center fo distortion
+        // Compute the center of distortion. The sign change comes from
+        // the camera model that Noah Snavely's Bundler assumes, whereby
+        // the camera coordinate system has a negative z axis.
         T xp = -p[0] / p[2];
         T yp = -p[1] / p[2];
 
         // Apply second and fourth order radial distortion
-        const T &l1 = camera[7];
-        const T &l2 = camera[8];
+        const T &k1 = camera[7];
+        const T &k2 = camera[8];
 
         T r2 = xp * xp + yp * yp;
-        T distortion = T(1.0) + r2 * (l1 + l2 * r2);
+        T distortion = T(1.0) + k1 * r2 + k2 * r2 * r2;
 
         const T &focal = camera[6];
         predictions[0] = focal * distortion * xp;
@@ -62,8 +65,8 @@ public:
     // Factory to hide the construction of the CostFunction object from
     // the client code.
     static ceres::CostFunction *Create(const double observed_x, const double observed_y) {
-        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>( //! wtf is this
-        // return (new ceres::DynamicAutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>( //! wtf is this
+        // <CostFunc, dim of residual, dim of x(camera), dim of y(point)>
+        return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
             new SnavelyReprojectionError(observed_x, observed_y)));
     }
 

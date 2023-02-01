@@ -17,19 +17,10 @@ int main(int argc, char **argv) {
 
     BALProblem bal_problem(argv[1]);
     bal_problem.Normalize();
-    cout << "normalized" << endl;
-    // purturbing the data. Args- rotation, translation, point
     bal_problem.Perturb(0.1, 0.5, 0.5); 
-    cout << "purturbed" << endl;
-    // before solving BA
     bal_problem.WriteToPLYFile("initial.ply");
-    cout << "initial.py" << endl;
-    // solve BS
     SolveBA(bal_problem);
-    cout << "solved BA" << endl;
-    // after solving BA
     bal_problem.WriteToPLYFile("final.ply");
-    cout << "written final.py" << endl;
     return 0;
 }
 
@@ -53,7 +44,6 @@ void SolveBA(BALProblem &bal_problem) {
         cost_function = SnavelyReprojectionError::Create(observations[2 * i + 0], observations[2 * i + 1]);
 
         // If enabled use Huber's loss function.
-        //! check why huber loss
         ceres::LossFunction *loss_function = new ceres::HuberLoss(1.0); // huber loss so that wrong points do not overpower many correct classifications
 
         // Each observation corresponds to a pair of a camera and a point
@@ -72,9 +62,9 @@ void SolveBA(BALProblem &bal_problem) {
     std::cout << "Forming " << bal_problem.num_observations() << " observations. " << std::endl;
 
     std::cout << "Solving ceres BA ... " << endl;
-    ceres::Solver::Options options; //! what all options are available. pros cons of each
-    options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR; //! why sparse schur
-    options.minimizer_progress_to_stdout = true; //! what is this
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
+    options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";

@@ -5,29 +5,29 @@ class BALProblem {
 private:
 
     int num_cameras_; // no of cameras
-    int num_points_; 
+    int num_points_; // no of 3D points in the scene
     int num_observations_; // no of observations. each observation has x,y coordinate
     int num_parameters_; // 6 for cameras, 3 for pnts
     bool use_quaternions_; // do you want to use quaternions or not
 
-    int *point_index_;     
+    int *point_index_; // pointer to 3D points    
     int *camera_index_; // pointer to cameras   
     double *observations_; // pointer to obs
-    double *parameters_; // pnts to params
+    double *parameters_; // pointer to params
 
+    // To convert camera center to angle, axis, and center
     void CameraToAngelAxisAndCenter(const double *camera,
                                     double *angle_axis,
                                     double *center) const;
 
+    // To convert angle, axis, and center to camera center
     void AngleAxisAndCenterToCamera(const double *angle_axis,
                                     const double *center,
                                     double *camera) const;
 
 public:
-    /// load bal data from text file
-    //! why using explicit?
-    //! what can convert implicitely to string / bool?
-    explicit BALProblem(const std::string &filename, bool use_quaternions = false);  // explicit constructor will not let implicit conversion happen
+    // Load bal data from text file
+    explicit BALProblem(const std::string &filename, bool use_quaternions = false);  
 
     ~BALProblem() {
         delete[] point_index_;
@@ -36,19 +36,24 @@ public:
         delete[] parameters_;
     }
 
-    /// save results to ply pointcloud
+    // Write the problem to a PLY file for inspection in Meshlab or CloudCompare
     void WriteToPLYFile(const std::string &filename) const;
 
+    // Compute the marginal median of the geometry
     void Normalize();
 
+    // To purturb the data
     void Perturb(const double rotation_sigma,
                  const double translation_sigma,
                  const double point_sigma);
 
-    //! using 10 or 9? formula?
+    // camera : 9 dims array
+    // [0-2] : angle-axis rotation
+    // [3-5] : translation
+    // [6-8] : camera parameter, [6] focal length, [7-8] second and forth order radial distortion: u(1 + k1*r^2 + k2^r^4)
     int camera_block_size() const { return use_quaternions_ ? 10 : 9; }
 
-    //! why 3? store in some variable?
+    // 3D points
     int point_block_size() const { return 3; }
 
     int num_cameras() const { return num_cameras_; }
@@ -65,11 +70,7 @@ public:
 
     const double *observations() const { return observations_; }
 
-    const double *parameters() const { return parameters_; }
-
     const double *cameras() const { return parameters_; }
-
-    const double *points() const { return parameters_ + camera_block_size() * num_cameras_; }
 
     double *mutable_cameras() { return parameters_; }
 

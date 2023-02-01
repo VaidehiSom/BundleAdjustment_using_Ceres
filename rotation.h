@@ -5,7 +5,6 @@
 #include <cmath>
 #include <limits>
 
-//////////////////////////////////////////////////////////////////
 // math functions needed for rotation conversion. 
 
 // dot and cross production 
@@ -21,9 +20,6 @@ inline void CrossProduct(const T x[3], const T y[3], T result[3]) {
     result[1] = x[2] * y[0] - x[0] * y[2];
     result[2] = x[0] * y[1] - x[1] * y[0];
 }
-
-
-//////////////////////////////////////////////////////////////////
 
 
 // Converts from a angle anxis to quaternion : 
@@ -95,6 +91,7 @@ inline void AngleAxisRotatePoint(const T angle_axis[3], const T pt[3], T result[
     if (theta2 > T(std::numeric_limits<double>::epsilon())) {
         // Away from zero, use the rodriguez formula
         //
+        // w is the euler vector, theta euler angle, about which pt is rotating
         //   result = pt costheta +
         //            (w x pt) * sintheta +
         //            w (w . pt) (1 - costheta)
@@ -108,6 +105,7 @@ inline void AngleAxisRotatePoint(const T angle_axis[3], const T pt[3], T result[
         const T sintheta = sin(theta);
         const T theta_inverse = 1.0 / theta;
 
+        // theta * w = angle_axis
         const T w[3] = {angle_axis[0] * theta_inverse,
                         angle_axis[1] * theta_inverse,
                         angle_axis[2] * theta_inverse};
@@ -134,13 +132,10 @@ inline void AngleAxisRotatePoint(const T angle_axis[3], const T pt[3], T result[
         //
         // But sintheta ~ theta and theta * w = angle_axis, which gives us
         //
-        //  R = I + hat(w)
+        //  R = I + angle_axis
         //
         // and actually performing multiplication with the point pt, gives us
-        // R * pt = pt + w x pt.
-        //
-        // Switching to the Taylor expansion near zero provides meaningful
-        // derivatives when evaluated using Jets.
+        // R * pt = pt + angle_axis x pt.
         //
         // Explicitly inlined evaluation of the cross product for
         // performance reasons.

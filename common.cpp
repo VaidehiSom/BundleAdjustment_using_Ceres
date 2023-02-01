@@ -10,28 +10,25 @@
 #include "rotation.h"
 #include "random.h"
 
-// TODO Check eigen library
-
-//! What are these functions?
 typedef Eigen::Map<Eigen::VectorXd> VectorRef;
 typedef Eigen::Map<const Eigen::VectorXd> ConstVectorRef;
 
-// scanning data file
 template<typename T>
 void FscanfOrDie(FILE *fptr, const char *format, T *value) { // cannot change the value at format
+    // scanning data file
     int num_scanned = fscanf(fptr, format, value);
     if (num_scanned != 1)
         std::cerr << "Invalid UW data file. ";
 }
 
-// Adding noise to data (purturbing)
 void PerturbPoint3(const double sigma, double *point) {
+    // Adding noise to data (purturbing)
     for (int i = 0; i < 3; ++i)
         point[i] += RandNormal() * sigma;
 }
 
-// use in normalizing the dataset
 double Median(std::vector<double> *data) {
+    // use in normalizing the dataset
     int n = data->size();
     std::vector<double>::iterator mid_point = data->begin() + n / 2;
     std::nth_element(data->begin(), mid_point, data->end());
@@ -39,6 +36,7 @@ double Median(std::vector<double> *data) {
 }
 
 BALProblem::BALProblem(const std::string &filename, bool use_quaternions) {
+    // constructor
     FILE *fptr = fopen(filename.c_str(), "r");
 
     if (fptr == NULL) {
@@ -101,7 +99,6 @@ BALProblem::BALProblem(const std::string &filename, bool use_quaternions) {
     }
 }
 
-// Write the problem to a PLY file for inspection in Meshlab or CloudCompare
 void BALProblem::WriteToPLYFile(const std::string &filename) const {
     std::ofstream of(filename.c_str());
 
@@ -172,7 +169,6 @@ void BALProblem::AngleAxisAndCenterToCamera(const double *angle_axis,
 }
 
 void BALProblem::Normalize() {
-    // Compute the marginal median of the geometry
     std::vector<double> tmp(num_points_);
     Eigen::Vector3d median;
     double *points = mutable_points();
